@@ -60,8 +60,8 @@ async fn main() -> octocrab::Result<()> {
                 issue.labels.iter().for_each(|label| {
                     print!(" #{}", label.name);
                 });
+                println!();
             }
-            println!();
         }
         page = match octocrab
             .get_page::<models::issues::Issue>(&page.next)
