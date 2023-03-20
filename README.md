@@ -6,7 +6,7 @@ Writes all the github issues for a repo to a file. Good for offline backups of i
 
 ### Executables
 
-[macos](https://github.com/ChristopherAyling/gh-issues-dl/releases/download/mvp/gh-issues-dl)
+Get from [releases page](https://github.com/ChristopherAyling/gh-issues-dl/releases)
 
 ### From Source
 
