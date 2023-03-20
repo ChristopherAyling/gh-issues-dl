@@ -1,18 +1,46 @@
+use clap::Parser;
 use octocrab::{models, params};
-use std::{thread, time, env, vec::Vec};
+use std::{thread, time};
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[clap(short, long)]
+    repo: String,
+    #[clap(short, long)]
+    token: Option<String>,
+    #[clap(short, long)]
+    output: String,
+    // quiet is false by default
+    #[clap(short, long, default_value = "false")]
+    quiet: bool,
+}
 
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
-    println!("Hello, world!");
+    let args = Args::parse();
+    let token = args.token;
 
-    let token = env::var("GH_PAT").unwrap();
+    let octocrab = match  token {
+        Some(token) => octocrab::Octocrab::builder()
+            .personal_token(token)
+            .build()?,
+        None => octocrab::Octocrab::builder()
+            .build()?,
+    };
 
-    let octocrab = octocrab::Octocrab::builder()
-        .personal_token(token)
-        .build()?;
+    // split repo into owner and repo destructure
+    let (owner, repo) = match args.repo.split_once("/") {
+        Some((owner, repo)) => (owner, repo),
+        None => {
+            eprintln!("Invalid repo name. Expected OWNER/REPONAME. Got {}", args.repo);
+            std::process::exit(1);
+        }
+    };
+
+
     // Returns the first page of all issues.
     let mut page = octocrab
-        .issues("ChristopherAyling", "self.step")
+        .issues(owner, repo)
         .list()
         // Optional Parameters
         .state(params::State::All)
@@ -27,10 +55,12 @@ async fn main() -> octocrab::Result<()> {
     loop {
         for issue in &page {
             all_issues.push(issue.clone());
-            print!("{} - {}", issue.number, issue.title);
-            issue.labels.iter().for_each(|label| {
-                print!(" #{}", label.name);
-            });
+            if !args.quiet && args.output != "stdio" {
+                print!("{} - {}", issue.number, issue.title);
+                issue.labels.iter().for_each(|label| {
+                    print!(" #{}", label.name);
+                });
+            }
             println!();
         }
         page = match octocrab
@@ -44,8 +74,13 @@ async fn main() -> octocrab::Result<()> {
     }
 
     // write to file
-    let mut file = std::fs::File::create("issues.json").unwrap();
-    serde_json::to_writer_pretty(&mut file, &all_issues).unwrap();
+    if args.output != "stdio" {
+        let mut file = std::fs::File::create(args.output).unwrap();
+        serde_json::to_writer_pretty(&mut file, &all_issues).unwrap();
+    } else {
+        let mut file = std::io::stdout();
+        serde_json::to_writer_pretty(&mut file, &all_issues).unwrap();
+    };
 
     Ok(())
 }
