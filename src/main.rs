@@ -8,7 +8,7 @@ struct Args {
     repo: String,
     #[clap(short, long)]
     token: Option<String>,
-    #[clap(short, long)]
+    #[clap(short, long, default_value = "stdio")]
     output: String,
     // quiet is false by default
     #[clap(short, long, default_value = "false")]
